@@ -1,15 +1,19 @@
-FROM php:8-fpm
+FROM php:8-cli
 
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y wget unzip \
         libfreetype6-dev \
         libjpeg62-turbo-dev \
         libpng-dev \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install -j$(nproc) gd pdo_mysql
 
+RUN wget https://getcomposer.org/installer -O - -q | php -- --version=1.9.1 --install-dir=/bin --filename=composer --quiet
+
+ENV COMPOSER_ALLOW_SUPERUSER 1
 
 RUN pecl install -o -f redis \
     &&  rm -rf /tmp/pear \
     &&  docker-php-ext-enable redis
 
 WORKDIR /var/www
+
