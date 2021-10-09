@@ -6,7 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Mail\Auth\VerifyMail;
 use App\Providers\RouteServiceProvider;
 use App\User;
+use Illuminate\Auth\Events\Registered;
 use Illuminate\Foundation\Auth\RegistersUsers;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
@@ -15,42 +17,39 @@ use Illuminate\Support\Str;
 class RegisterController extends Controller
 {
 
-    use RegistersUsers;
-
-
-    protected $redirectTo = RouteServiceProvider::HOME;
-
-
     public function __construct()
     {
         $this->middleware('guest');
     }
 
-
-    protected function validator(array $data)
+    public function showRegistrationForm()
     {
-        return Validator::make($data, [
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
-            'password' => ['required', 'string', 'min:8', 'confirmed'],
-        ]);
+        return view('auth.register');
     }
 
-
-    protected function create(array $data)
+    public function register(Request $request)
     {
+        $this->validate($request, [
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users',
+            'password' => 'required|string|min:6|confirmed',
+        ]);
+
         $user = User::create([
-            'name' => $data['name'],
-            'email' => $data['email'],
-            'password' => Hash::make($data['password']),
+            'name' => $request['name'],
+            'email' => $request['email'],
+            'password' => bcrypt($request['password']),
             'verify_token' => Str::random(),
             'status' => User::STATUS_WAIT,
         ]);
 
         Mail::to($user->email)->send(new VerifyMail($user));
+        event(new Registered($user));
 
-        return $user;
+        return redirect()->route('login')
+            ->with('success', 'Check your email and click on the link to verify.');
     }
+
 
     public function verify($token)
     {
