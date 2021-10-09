@@ -17,6 +17,8 @@ use Illuminate\Support\Str;
 |
 */
 
+/** @var phpDocumentor\Reflection\DocBlock\Tags\Factory\ $factory  */
+
 $factory->define(User::class, function (Faker $faker) {
     return [
         'name' => $faker->name,
